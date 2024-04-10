@@ -1,7 +1,7 @@
-// 在应用程序的入口处调用复制数据库方法，并执行其他操作
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gsc/dao/writer_dao.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'bean/writer.dart';
@@ -77,13 +77,24 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   List<Writer> writerList = [];
+  List<int> dyNumList = [];
   bool _isLoading = true;
+  ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void initData() async {
     // final data = await WriterDao.fetchWriters();
+    int currDyid = 6;
     final data = await WriterDao.getWritersByDynastyid(5);
+    final dyNum = await WriterDao.dynastyAndNum();
     setState(() {
       writerList = data;
+      dyNumList = dyNum;
       _isLoading = false;
     });
   }
@@ -99,72 +110,89 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
         theme: ThemeData(primarySwatch: Colors.orange),
         home: Scaffold(
-          appBar: AppBar(
-            title: const Text('古诗词'),
-          ),
-          body: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      OptionGridView(
-                        itemCount: writerList.length,
-                        rowCount: 4,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        itemBuilder: (context, index) {
-                          Writer wr = writerList[index];
-                          return Container(
-                            padding: const EdgeInsets.all(10),
-                            alignment: Alignment.center,
-                            color: Colors.red.withOpacity(0.2),
-                            child: Column(
-                              children: [
-                                Text(
-                                  "${wr.writername} · ${dynastys[wr.dynastyid]} ",
-                                  style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(
-                                  height: 5,
-                                ),
-                                Text("    ${wr.summary}"),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-        ));
+            appBar: AppBar(
+              title: const Text('古诗词'),
+              backgroundColor: Colors.amber,
+              // actions: [_dynumList()],
+            ),
+            body: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : _writerList()));
   }
-}
 
-Widget writer_item(Writer w) {
-  return Flex(direction: Axis.vertical, children: <Widget>[
-    Container(
-      alignment: Alignment.center,
-      child: Text(
-        '${w.writerid} - ${w.writername}'.trim(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+  Widget _dynumList() {
+    return Container(
+        height: 40,
+        child: Scrollbar(
+            controller: _scrollController,
+            interactive: true,
+            child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                itemCount: dyNumList.length,
+                padding: EdgeInsets.only(bottom: 10),
+                itemBuilder: (context, index) {
+                  return Container(
+                      margin: EdgeInsets.only(left: 10),
+                      child: Row(children: [
+                        Text(
+                          "${dynastys[index + 1]} ",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.red),
+                        ),
+                        Text("(${dyNumList[index]} )"),
+                      ]));
+                })));
+  }
+
+  Widget _writerList() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 5,
+          ),
+          _dynumList(),
+          SizedBox(
+            height: 10,
+          ),
+          OptionGridView(
+            itemCount: writerList.length,
+            rowCount: 4,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            itemBuilder: (context, index) {
+              Writer wr = writerList[index];
+              return Container(
+                padding: const EdgeInsets.all(10),
+                alignment: Alignment.center,
+                color: Colors.red.withOpacity(0.2),
+                child: Column(
+                  children: [
+                    Text(
+                      "${wr.writername} · ${dynastys[wr.dynastyid]} ",
+                      style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    Text("    ${wr.summary}"),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
-    ),
-    SizedBox(height: 6),
-    Expanded(
-        child: Container(
-      padding: EdgeInsets.only(top: 10, bottom: 10),
-      width: double.maxFinite,
-      child: Text(
-        '${w.summary}'.trim(),
-      ),
-    ))
-  ]);
+    );
+  }
 }
 
 class ErrorApp extends StatelessWidget {

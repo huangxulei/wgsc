@@ -16,4 +16,13 @@ class WriterDao {
         await db.query('Writer', where: " dynastyid=${dynastyid}");
     return List.generate(maps.length, (i) => Writer.fromMap(maps[i]));
   }
+
+  // List<int>   writersNum  [11,22,]
+
+  static Future<List<int>> dynastyAndNum() async {
+    final db = await SQLHelper.db();
+    String sql = "select count(*) as num from Writer group by dynastyid";
+    List<Map<String, dynamic>> maps = await db.rawQuery(sql);
+    return List.generate(maps.length, (i) => maps[i]["num"]);
+  }
 }
