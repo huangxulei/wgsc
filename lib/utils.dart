@@ -1,19 +1,21 @@
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
-
-Future<int> getFileSize(String filePath) async {
-  // 获取文件路径
-  final directory = await getApplicationDocumentsDirectory();
-  final file = File('${directory.path}/$filePath');
-
-  try {
-    // 获取文件大小
-    final fileStat = await file.stat();
-    return fileStat.size;
-  } catch (e) {
-    // 处理错误，例如文件不存在
-    print('Error getting file size: $e');
-    return -1;
-  }
-}
+final List<String> kinds = ["全部", "诗", "词", "曲", "文言文", "辞赋"];
+final List<String> dynastys = [
+  "全部",
+  "先秦",
+  "两汉",
+  "魏晋",
+  "南北朝",
+  "隋代",
+  "初唐",
+  "盛唐",
+  "中唐",
+  "晚唐",
+  "五代",
+  "北宋",
+  "南宋",
+  "金朝",
+  "元代",
+  "明代",
+  "清代",
+  "近现代"
+];
