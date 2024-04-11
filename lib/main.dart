@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:gsc/app_module.dart';
 import 'package:gsc/app_widget.dart';
-import 'package:gsc/page/writer_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 import 'sql_helper.dart';
