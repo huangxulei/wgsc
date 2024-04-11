@@ -1,6 +1,6 @@
 class Poetry {
   int poetryid;
-  int typeid;
+  String typeid;
   int kindid;
   int writerid;
   String title;
