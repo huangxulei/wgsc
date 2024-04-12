@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:gsc/bean/poetry.dart';
-
+import 'package:gsc/common/store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../bean/info.dart';
+import '../bean/poem.dart';
 import '../dao/poetry_dao.dart';
+import '../utils.dart';
 
 class PoetryPage extends StatefulWidget {
   const PoetryPage({super.key});
@@ -11,10 +14,16 @@ class PoetryPage extends StatefulWidget {
   State<PoetryPage> createState() => _PoetryPageState();
 }
 
-class _PoetryPageState extends State<PoetryPage> {
-  final ValueNotifier<int> _pid = ValueNotifier(1);
-  Poetry? poetry;
+class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
+  List<Poem> allPoem = [];
+  final ValueNotifier<int> _pid = ValueNotifier(0);
+  late Poem poem;
   bool _isLoading = true;
+  List<Info> infoList = [];
+  late TabController _tabController;
+  Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
+  late int currPid;
 
   @override
   void initState() {
@@ -23,16 +32,30 @@ class _PoetryPageState extends State<PoetryPage> {
   }
 
   void initData() async {
-    final Poetry p = await PoetryDao.getPoetrysByid(_pid.value);
+    allPoem = await PoetryDao.getAllPoem();
+    final SharedPreferences prefs = await _prefs;
+    currPid = prefs.getInt("currpid") ?? 0;
 
+    Poem p = allPoem[_pid.value];
+    infoList = await PoetryDao.findInfoByPid(p.poetryid);
+    _tabController = TabController(
+      length: infoList.length,
+      vsync: this,
+    );
     setState(() {
-      poetry = p;
+      poem = p;
       _isLoading = false;
     });
   }
 
   void changePid(int pid) {
-    _pid.value = pid;
+    if (pid == allPoem.length) {
+      _pid.value = 1;
+    } else if (pid == -1) {
+      _pid.value = allPoem.length - 1;
+    } else {
+      _pid.value = pid;
+    }
     initData();
   }
 
@@ -55,7 +78,7 @@ class _PoetryPageState extends State<PoetryPage> {
                   child: const Icon(Icons.arrow_left),
                 ),
               ),
-              Expanded(
+              Flexible(
                   child: _isLoading
                       ? const Center(
                           child: CircularProgressIndicator(),
@@ -77,33 +100,77 @@ class _PoetryPageState extends State<PoetryPage> {
   }
 
   Widget _poetryView() {
-    return Container(
+    return SelectionArea(
       child: Column(
         children: [
           const SizedBox(
             height: 10,
           ),
           Text(
-            "${poetry?.title}",
+            "${poem.title} (${_pid.value + 1} / ${allPoem.length})",
             style: const TextStyle(
                 fontWeight: FontWeight.bold, fontSize: 30, color: Colors.red),
           ),
           const SizedBox(
             height: 10,
           ),
-          Expanded(
-              child: SingleChildScrollView(
-            child: Html(
-              data: poetry?.content,
-              style: {
-                "body": Style(
-                  fontSize: FontSize(22.0), // 设置全局字体大小
+          Container(
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.only(right: 100),
+              child: Text(
+                "${dynastys[poem.dynastyid]} · ${poem.writername}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ),
-              },
-            ),
-          ))
+              )),
+          const SizedBox(
+            height: 10,
+          ),
+          Flexible(
+              child: SingleChildScrollView(
+                  child: Html(
+            data: poem.content,
+            style: {
+              "body": Style(
+                  fontSize: FontSize(22.0),
+                  textAlign: poem.kindid == 1 && poem.content.length < 100
+                      ? TextAlign.center
+                      : TextAlign.left),
+            },
+          ))),
+          const SizedBox(
+            height: 10,
+          ),
+          _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : _infoView()
         ],
       ),
     );
+  }
+
+  Widget _infoView() {
+    return Flexible(
+        flex: 1,
+        child: Column(
+          children: [
+            TabBar(
+              controller: _tabController,
+              tabs: List.generate(
+                  infoList.length, (index) => Text(infoList[index].title)),
+            ),
+            Flexible(
+              child: TabBarView(
+                  controller: _tabController,
+                  children: List.generate(infoList.length, (index) {
+                    return SingleChildScrollView(
+                        child: Html(data: infoList[index].content));
+                  })),
+            )
+          ],
+        ));
   }
 }
