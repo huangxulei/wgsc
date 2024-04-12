@@ -1,36 +1,21 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
-class Store {
-  // static StoreKeys storeKeys;
-  final SharedPreferences _store;
-  static Future<Store> getInstance() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    return Store._internal(preferences);
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+
+class GStorage {
+  static late final Box<dynamic> setting;
+
+  static Future<void> init() async {
+    final Directory dir = await getApplicationSupportDirectory();
+    final String path = dir.path;
+    print(path);
+    await Hive.initFlutter('$path/hive');
+    setting = await Hive.openBox('setting');
   }
 
-  Store._internal(this._store);
-
-//  static int getSpKindid(){
-//     return _store.getInt("kindid");
-//   }
-
-//   setSpKindid(int kindid) {
-//     _store.setInt("kindid", kindid);
-//   }
-
-//   getSpWriterid() {
-//     return _store.getInt("writerid");
-//   }
-
-//   setSpWriterid(int writerid) {
-//     _store.setInt("writerid", writerid);
-//   }
-
-  getCurrPid() {
-    return _store.getInt("currpid");
-  }
-
-  setCurrPid(int currpid) {
-    return _store.setInt("currpid", currpid);
+  static Future<void> close() async {
+    setting.compact();
+    setting.close();
   }
 }

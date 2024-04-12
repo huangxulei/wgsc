@@ -5,6 +5,7 @@ import 'package:gsc/app_module.dart';
 import 'package:gsc/app_widget.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
+import 'common/store.dart';
 import 'sql_helper.dart';
 
 enum InitFlag { wait, ok, error }
@@ -31,6 +32,7 @@ void main() async {
     windowManager.setMaximizable(false);
     windowManager.setResizable(false);
   }
+  await GStorage.init();
   runApp(const InitPage());
 }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:gsc/common/store.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
 import '../bean/info.dart';
 import '../bean/poem.dart';
 import '../dao/poetry_dao.dart';
@@ -16,26 +16,23 @@ class PoetryPage extends StatefulWidget {
 
 class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   List<Poem> allPoem = [];
+  Box Setting = GStorage.setting;
+  late int currpid = Setting.get("currpid", defaultValue: 0);
   final ValueNotifier<int> _pid = ValueNotifier(0);
   late Poem poem;
   bool _isLoading = true;
   List<Info> infoList = [];
   late TabController _tabController;
-  Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-
-  late int currPid;
 
   @override
   void initState() {
     super.initState();
+    _pid.value = currpid;
     initData();
   }
 
   void initData() async {
     allPoem = await PoetryDao.getAllPoem();
-    final SharedPreferences prefs = await _prefs;
-    currPid = prefs.getInt("currpid") ?? 0;
-
     Poem p = allPoem[_pid.value];
     infoList = await PoetryDao.findInfoByPid(p.poetryid);
     _tabController = TabController(
@@ -46,6 +43,7 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
       poem = p;
       _isLoading = false;
     });
+    await Setting.put("currpid", _pid.value);
   }
 
   void changePid(int pid) {
