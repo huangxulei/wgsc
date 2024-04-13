@@ -1,7 +1,9 @@
 import 'package:gsc/bean/poetry.dart';
+import 'package:hive/hive.dart';
 
 import '../bean/info.dart';
 import '../bean/poem.dart';
+import '../common/store.dart';
 import '../sql_helper.dart';
 
 class PoetryDao {
@@ -41,5 +43,22 @@ class PoetryDao {
     String sql = "select * from Info where cateid=1 and fid = $pid";
     List<Map<String, dynamic>> maps = await db.rawQuery(sql);
     return List.generate(maps.length, (i) => Info.fromMap(maps[i]));
+  }
+
+  static Future<List<Poem>> getLike() async {
+    List<int> likes = GStorage.getLikes();
+
+    final db = await SQLHelper.db();
+    String sql =
+        "select p.*,w.dynastyid, w.writername from poetry p join writer w on (p.writerid = w.writerid) where 1=1 ";
+    if (likes[0] != 0) {
+      sql += " and p.writerid = $likes[0]";
+    }
+
+    if (likes[1] != 0) {
+      sql += " and p.kindid = $likes[1]";
+    }
+    List<Map<String, dynamic>> maps = await db.rawQuery(sql);
+    return List.generate(maps.length, (i) => Poem.fromMap(maps[i]));
   }
 }

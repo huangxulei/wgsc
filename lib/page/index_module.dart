@@ -7,9 +7,7 @@ import 'router.dart';
 
 class IndexModule extends Module {
   @override
-  void binds(i) {
-    //注册一些数据和方法 给后续页面提供
-  }
+  void binds(i) {}
 
   @override
   void routes(r) {
@@ -28,6 +26,5 @@ class IndexModule extends Module {
     r.child("/tab", child: (_) {
       return const IndexPage();
     }, children: menu.routes, transition: TransitionType.noTransition);
-    // r.module("/video", module: VideoModule());
   }
 }

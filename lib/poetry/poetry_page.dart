@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:gsc/common/store.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../bean/info.dart';
 import '../bean/poem.dart';
 import '../dao/poetry_dao.dart';
@@ -17,8 +19,9 @@ class PoetryPage extends StatefulWidget {
 class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   List<Poem> allPoem = [];
   Box Setting = GStorage.setting;
+  Box Like = GStorage.like;
   late int currpid = Setting.get("currpid", defaultValue: 0);
-  final ValueNotifier<int> _pid = ValueNotifier(0);
+  late int _pid;
   late Poem poem;
   bool _isLoading = true;
   List<Info> infoList = [];
@@ -27,13 +30,13 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _pid.value = currpid;
+    _pid = currpid;
     initData();
   }
 
   void initData() async {
-    allPoem = await PoetryDao.getAllPoem();
-    Poem p = allPoem[_pid.value];
+    allPoem = await PoetryDao.getLike();
+    Poem p = allPoem[_pid];
     infoList = await PoetryDao.findInfoByPid(p.poetryid);
     _tabController = TabController(
       length: infoList.length,
@@ -43,57 +46,66 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
       poem = p;
       _isLoading = false;
     });
-    await Setting.put("currpid", _pid.value);
+    await Setting.put("currpid", _pid);
   }
 
   void changePid(int pid) {
     if (pid == allPoem.length) {
-      _pid.value = 1;
+      _pid = 1;
     } else if (pid == -1) {
-      _pid.value = allPoem.length - 1;
+      _pid = allPoem.length - 1;
     } else {
-      _pid.value = pid;
+      _pid = pid;
     }
     initData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-        valueListenable: _pid,
+    return ValueListenableBuilder<Box>(
+        valueListenable: Like.listenable(),
         builder: (BuildContext context, value, Widget? child) {
           return Scaffold(
-              body: Row(
-            children: [
-              Container(
-                margin: EdgeInsets.only(right: 10),
-                alignment: Alignment.center,
-                width: 50,
-                child: FloatingActionButton(
-                  onPressed: () {
-                    changePid(_pid.value - 1);
-                  },
-                  child: const Icon(Icons.arrow_left),
-                ),
+              appBar: AppBar(
+                actions: [
+                  TextButton(
+                      onPressed: () {
+                        _attachImitate();
+                      },
+                      child: Text("筛选"))
+                ],
               ),
-              Flexible(
-                  child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(),
-                        )
-                      : _poetryView()),
-              Container(
-                  margin: EdgeInsets.only(left: 10),
-                  alignment: Alignment.center,
-                  width: 50,
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      changePid(_pid.value + 1);
-                    },
-                    child: const Icon(Icons.arrow_right),
-                  )),
-            ],
-          ));
+              body: Row(
+                children: [
+                  Container(
+                    margin: EdgeInsets.only(right: 10),
+                    alignment: Alignment.center,
+                    width: 50,
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        changePid(_pid - 1);
+                      },
+                      child: const Icon(Icons.arrow_left),
+                    ),
+                  ),
+                  Flexible(
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          : _poetryView()),
+                  Container(
+                      margin: EdgeInsets.only(left: 10),
+                      alignment: Alignment.center,
+                      width: 50,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          changePid(_pid + 1);
+                        },
+                        child: const Icon(Icons.arrow_right),
+                      )),
+                ],
+              ));
         });
   }
 
@@ -105,7 +117,7 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
             height: 10,
           ),
           Text(
-            "${poem.title} (${_pid.value + 1} / ${allPoem.length})",
+            "${poem.title} (${_pid + 1} / ${allPoem.length})",
             style: const TextStyle(
                 fontWeight: FontWeight.bold, fontSize: 30, color: Colors.red),
           ),
@@ -170,5 +182,53 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
             )
           ],
         ));
+  }
+
+  void _attachImitate() {
+    dropdownButton() {
+      late List<DropdownMenuItem<int>> list = [];
+      for (int i = 0; i < kinds.length; i++) {
+        list.add(DropdownMenuItem(
+          value: i,
+          child: Text(kinds[i]),
+        ));
+      }
+      if (list.isNotEmpty) {
+        return DropdownButton<int>(
+          value: 0,
+          items: list,
+          onChanged: (value) {
+            print(value);
+          },
+        );
+      } else {
+        return const Text("没有数据");
+      }
+    }
+
+    SmartDialog.show(builder: (_) {
+      return Container(
+        width: 600,
+        height: 400,
+        alignment: Alignment.center,
+        margin: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+        ),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Container(
+            padding: EdgeInsets.symmetric(horizontal: 100),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                dropdownButton(),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 }
