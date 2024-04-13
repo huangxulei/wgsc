@@ -25,4 +25,11 @@ class WriterDao {
     List<Map<String, dynamic>> maps = await db.rawQuery(sql);
     return List.generate(maps.length, (i) => maps[i]["num"]);
   }
+
+  static Future<int> getDyidByWrid(int writerid) async {
+    final db = await SQLHelper.db();
+    String sql = "select dynastyid from Writer where writerid=$writerid";
+    List<Map<String, dynamic>> maps = await db.rawQuery(sql);
+    return maps[0]["dynastyid"];
+  }
 }

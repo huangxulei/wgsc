@@ -51,13 +51,16 @@ class PoetryDao {
     final db = await SQLHelper.db();
     String sql =
         "select p.*,w.dynastyid, w.writername from poetry p join writer w on (p.writerid = w.writerid) where 1=1 ";
+
     if (likes[0] != 0) {
-      sql += " and p.writerid = $likes[0]";
+      sql += " and p.writerid = ${likes[0]}";
+    }
+    print(likes[1]);
+    if (likes[1] != 0) {
+      sql += " and p.kindid = ${likes[1]}";
     }
 
-    if (likes[1] != 0) {
-      sql += " and p.kindid = $likes[1]";
-    }
+    print("sql= $sql");
     List<Map<String, dynamic>> maps = await db.rawQuery(sql);
     return List.generate(maps.length, (i) => Poem.fromMap(maps[i]));
   }

@@ -18,9 +18,10 @@ class PoetryPage extends StatefulWidget {
 
 class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   List<Poem> allPoem = [];
-  Box Setting = GStorage.setting;
-  Box Like = GStorage.like;
-  late int currpid = Setting.get("currpid", defaultValue: 0);
+  late int kindid;
+  late int dynastyid;
+  late int writerid;
+  late int currpid = GStorage.setting.get("currpid") ?? 0;
   late int _pid;
   late Poem poem;
   bool _isLoading = true;
@@ -31,6 +32,8 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _pid = currpid;
+    kindid = GStorage.like.get("kindid") ?? 0;
+    writerid = GStorage.like.get("writerid") ?? 0;
     initData();
   }
 
@@ -46,11 +49,11 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
       poem = p;
       _isLoading = false;
     });
-    await Setting.put("currpid", _pid);
+    await GStorage.setting.put("currpid", _pid);
   }
 
   void changePid(int pid) {
-    if (pid == allPoem.length) {
+    if (pid >= allPoem.length) {
       _pid = 1;
     } else if (pid == -1) {
       _pid = allPoem.length - 1;
@@ -62,51 +65,47 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
-        valueListenable: Like.listenable(),
-        builder: (BuildContext context, value, Widget? child) {
-          return Scaffold(
-              appBar: AppBar(
-                actions: [
-                  TextButton(
-                      onPressed: () {
-                        _attachImitate();
-                      },
-                      child: Text("筛选"))
-                ],
+    return Scaffold(
+        appBar: AppBar(
+          actions: [
+            TextButton(
+                onPressed: () {
+                  _attachImitate();
+                },
+                child: Text("筛选"))
+          ],
+        ),
+        body: Row(
+          children: [
+            Container(
+              margin: EdgeInsets.only(right: 10),
+              alignment: Alignment.center,
+              width: 50,
+              child: FloatingActionButton(
+                onPressed: () {
+                  changePid(_pid - 1);
+                },
+                child: const Icon(Icons.arrow_left),
               ),
-              body: Row(
-                children: [
-                  Container(
-                    margin: EdgeInsets.only(right: 10),
-                    alignment: Alignment.center,
-                    width: 50,
-                    child: FloatingActionButton(
-                      onPressed: () {
-                        changePid(_pid - 1);
-                      },
-                      child: const Icon(Icons.arrow_left),
-                    ),
-                  ),
-                  Flexible(
-                      child: _isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(),
-                            )
-                          : _poetryView()),
-                  Container(
-                      margin: EdgeInsets.only(left: 10),
-                      alignment: Alignment.center,
-                      width: 50,
-                      child: FloatingActionButton(
-                        onPressed: () {
-                          changePid(_pid + 1);
-                        },
-                        child: const Icon(Icons.arrow_right),
-                      )),
-                ],
-              ));
-        });
+            ),
+            Flexible(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : _poetryView()),
+            Container(
+                margin: EdgeInsets.only(left: 10),
+                alignment: Alignment.center,
+                width: 50,
+                child: FloatingActionButton(
+                  onPressed: () {
+                    changePid(_pid + 1);
+                  },
+                  child: const Icon(Icons.arrow_right),
+                )),
+          ],
+        ));
   }
 
   Widget _poetryView() {
@@ -185,22 +184,86 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   }
 
   void _attachImitate() {
-    dropdownButton() {
+    kindidDropdownButton() {
       late List<DropdownMenuItem<int>> list = [];
       for (int i = 0; i < kinds.length; i++) {
         list.add(DropdownMenuItem(
           value: i,
-          child: Text(kinds[i]),
+          child: Text(
+            kinds[i],
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
         ));
       }
       if (list.isNotEmpty) {
-        return DropdownButton<int>(
-          value: 0,
-          items: list,
-          onChanged: (value) {
-            print(value);
-          },
-        );
+        return Row(children: [
+          const Text(
+            "体裁 : ",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          const SizedBox(
+            width: 10,
+          ),
+          DropdownButton<int>(
+            value: kindid,
+            items: list,
+            onChanged: (value) {
+              setState(() {
+                kindid = value ?? 0;
+                GStorage.like.put("kindid", kindid);
+                GStorage.setting.put("currpid", 0);
+                _pid = 0;
+                initData();
+              });
+              SmartDialog.dismiss();
+            },
+          )
+        ]);
+      } else {
+        return const Text("没有数据");
+      }
+    }
+
+    dynastyDropdownButton() {
+      //获取writerid的
+
+      late List<DropdownMenuItem<int>> list = [];
+      for (int i = 0; i < dynastys.length; i++) {
+        list.add(DropdownMenuItem(
+          value: i,
+          child: Text(
+            dynastys[i],
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+        ));
+      }
+      if (list.isNotEmpty) {
+        return Row(children: [
+          const Text(
+            "作者 : ",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          const SizedBox(
+            width: 10,
+          ),
+          DropdownButton<int>(
+            value: kindid,
+            items: list,
+            onChanged: (value) {},
+          )
+        ]);
       } else {
         return const Text("没有数据");
       }
@@ -223,7 +286,7 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                dropdownButton(),
+                kindidDropdownButton(),
               ],
             ),
           ),
