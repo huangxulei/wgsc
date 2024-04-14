@@ -1,3 +1,5 @@
+import 'package:gsc/utils.dart';
+
 import '../bean/writer.dart';
 import '../sql_helper.dart';
 
@@ -12,8 +14,12 @@ class WriterDao {
 
   static Future<List<Writer>> getWritersByDynastyid(int dynastyid) async {
     final db = await SQLHelper.db();
-    List<Map<String, dynamic>> maps =
-        await db.query('Writer', where: " dynastyid=${dynastyid}");
+    String sql = "select * from writer where 1=1 ";
+    if (dynastyid != 0) {
+      sql += "and dynastyid = ${dynastyid}";
+    }
+    print(sql);
+    List<Map<String, dynamic>> maps = await db.rawQuery(sql);
     return List.generate(maps.length, (i) => Writer.fromMap(maps[i]));
   }
 
