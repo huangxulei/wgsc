@@ -45,8 +45,8 @@ class PoetryDao {
     return List.generate(maps.length, (i) => Info.fromMap(maps[i]));
   }
 
-  static Future<List<Poem>> getLike() async {
-    List<int> likes = GStorage.getLikes();
+  static Future<List<Poem>> getLike(List<int> likes) async {
+    // List<int> likes = GStorage.getLikes();
 
     final db = await SQLHelper.db();
     String sql =

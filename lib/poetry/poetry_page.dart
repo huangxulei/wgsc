@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:gsc/common/store.dart';
-import 'package:gsc/dao/writer_dao.dart';
 import 'package:gsc/poetry/like_page.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../bean/info.dart';
 import '../bean/poem.dart';
 import '../dao/poetry_dao.dart';
@@ -26,6 +23,7 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   bool _isLoading = true;
   List<Info> infoList = [];
   late TabController _tabController;
+  late List<int> likes;
 
   @override
   void initState() {
@@ -34,8 +32,13 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   }
 
   void initData() async {
+    likes = GStorage.getLikes();
     _pid = GStorage.setting.get("currpid") ?? 0; //记录上次的查看的
-    allPoem = await PoetryDao.getLike(); //获取根据喜欢的作品
+    allPoem = await PoetryDao.getLike(likes); //获取根据喜欢的作品
+    if (allPoem.isEmpty) {
+      GStorage.like.put("kindid", 0);
+      GStorage.like.put("writerid", 0);
+    }
     poem = allPoem[_pid]; //当前显示的作品
     infoList = await PoetryDao.findInfoByPid(poem.poetryid); //该作品下面的info
     _tabController = TabController(
@@ -49,7 +52,7 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
 
   Future<void> changePid(int pid) async {
     if (pid >= allPoem.length) {
-      _pid = 1;
+      _pid = 0;
     } else if (pid == -1) {
       _pid = allPoem.length - 1;
     } else {
@@ -180,116 +183,6 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
   }
 
   void _attachImitate(context) {
-    // kindidDropdownButton() {
-    //   late List<DropdownMenuItem<int>> list = [];
-    //   for (int i = 0; i < kinds.length; i++) {
-    //     list.add(DropdownMenuItem(
-    //       value: i,
-    //       child: Text(
-    //         kinds[i],
-    //         style: const TextStyle(
-    //           fontWeight: FontWeight.bold,
-    //           fontSize: 20,
-    //         ),
-    //       ),
-    //     ));
-    //   }
-    //   if (list.isNotEmpty) {
-    //     return Row(children: [
-    //       const Text(
-    //         "体裁 : ",
-    //         style: TextStyle(
-    //           fontWeight: FontWeight.bold,
-    //           fontSize: 20,
-    //         ),
-    //       ),
-    //       const SizedBox(
-    //         width: 10,
-    //       ),
-    //       DropdownButton<int>(
-    //         value: kindid,
-    //         items: list,
-    //         onChanged: (value) {
-    //           setState(() {
-    //             kindid = value ?? 0;
-    //             GStorage.like.put("kindid", kindid);
-    //             GStorage.setting.put("currpid", 0);
-    //             _pid = 0;
-    //             initData();
-    //           });
-    //           SmartDialog.dismiss();
-    //         },
-    //       )
-    //     ]);
-    //   } else {
-    //     return const Text("没有数据");
-    //   }
-    // }
-
-    // dynastyDropdownButton() {
-    //   //获取writerid的
-    //   dynastyid = WriterDao.getDyidByWrid(writerid);
-    //   late List<DropdownMenuItem<int>> list = [];
-    //   for (int i = 0; i < dynastys.length; i++) {
-    //     list.add(DropdownMenuItem(
-    //       value: i,
-    //       child: Text(
-    //         dynastys[i],
-    //         style: const TextStyle(
-    //           fontWeight: FontWeight.bold,
-    //           fontSize: 20,
-    //         ),
-    //       ),
-    //     ));
-    //   }
-    //   if (list.isNotEmpty) {
-    //     return Row(children: [
-    //       const Text(
-    //         "作者 : ",
-    //         style: TextStyle(
-    //           fontWeight: FontWeight.bold,
-    //           fontSize: 20,
-    //         ),
-    //       ),
-    //       const SizedBox(
-    //         width: 10,
-    //       ),
-    //       DropdownButton<int>(
-    //         value: kindid,
-    //         items: list,
-    //         onChanged: (value) {},
-    //       )
-    //     ]);
-    //   } else {
-    //     return const Text("没有数据");
-    //   }
-    // }
-
-    // SmartDialog.show(builder: (_) {
-    //   return Container(
-    //     width: 600,
-    //     height: 400,
-    //     alignment: Alignment.center,
-    //     margin: EdgeInsets.all(20),
-    //     decoration: BoxDecoration(
-    //       borderRadius: BorderRadius.circular(20),
-    //       color: Colors.white,
-    //     ),
-    //     child: MaterialApp(
-    //       debugShowCheckedModeBanner: false,
-    //       home: Container(
-    //         padding: EdgeInsets.symmetric(horizontal: 100),
-    //         child: Row(
-    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //           children: [
-    //             kindidDropdownButton(),
-    //           ],
-    //         ),
-    //       ),
-    //     ),
-    //   );
-    // });
-
     SmartDialog.show(builder: (_) {
       return Container(
           width: 600,
@@ -310,11 +203,17 @@ class _PoetryPageState extends State<PoetryPage> with TickerProviderStateMixin {
                         icon: const Icon(Icons.keyboard_return)),
                     title: Text("修改喜欢"),
                   ),
-                  body: LikePage(
-                    invokeTap: () {
-                      initData();
-                    },
-                  ))));
+                  body:
+                      LikePage(onRefresh: onRefresh, onShowInfo: onShowInfo))));
     });
+  }
+
+  void onRefresh() {
+    SmartDialog.dismiss();
+    initData();
+  }
+
+  void onShowInfo(String info) {
+    SmartDialog.showToast(info);
   }
 }
