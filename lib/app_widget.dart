@@ -31,7 +31,7 @@ class _AppWidgetState extends State<AppWidget> {
           colorSchemeSeed: color),
       initial: AdaptiveThemeMode.system,
       builder: (theme, darkTheme) => MaterialApp.router(
-        title: "oneAnime",
+        title: "古诗词",
         theme: theme,
         darkTheme: darkTheme,
         routerConfig: Modular.routerConfig,

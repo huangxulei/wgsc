@@ -19,7 +19,7 @@ void main() async {
   if (Platform.isWindows) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(1000, 800),
+      size: Size(1000, 700),
       center: true,
       // backgroundColor: Colors.white,
       skipTaskbar: false,
@@ -125,6 +125,5 @@ class FirstPage extends StatelessWidget {
         ),
       ),
     );
-    ;
   }
 }
